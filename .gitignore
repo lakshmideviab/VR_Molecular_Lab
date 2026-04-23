@@ -1,0 +1,66 @@
+# =========================
+
+# Unity Generated Folders
+
+# =========================
+
+Library/
+Temp/
+Obj/
+Build/
+Builds/
+Logs/
+UserSettings/
+
+# =========================
+
+# IDE (VS / Rider)
+
+# =========================
+
+.vs/
+*.csproj
+*.unityproj
+*.sln
+*.suo
+*.tmp
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+
+# =========================
+
+# OS Files
+
+# =========================
+
+.DS_Store
+Thumbs.db
+
+# =========================
+
+# Unity Cache / Memory
+
+# =========================
+
+MemoryCaptures/
+
+# =========================
+
+# Build Files
+
+# =========================
+
+*.apk
+*.aab
+*.unitypackage
+
+# =========================
+
+# IMPORTANT: Keep meta files
+
+# =========================
+
+!*.meta
