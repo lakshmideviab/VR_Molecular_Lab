@@ -285,6 +285,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   atomType: H
   maxBonds: 1
+  defaultMaterial: {fileID: 2100000, guid: 7cd733be002e46d47b72f1512123ffea, type: 2}
+  grabbedMaterial: {fileID: 2100000, guid: b445034b780740e43bfea159257bef2e, type: 2}
+  bondedMaterial: {fileID: 2100000, guid: f70a8433326e1894a8b0f529aae09e02, type: 2}
+  saturatedMaterial: {fileID: 2100000, guid: 7cd733be002e46d47b72f1512123ffea, type: 2}
   grabInteractable: {fileID: 779986113789050150}
   snapPoints:
   - {fileID: 1919895103314883985}
@@ -481,8 +485,8 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4294967295
-  m_fontColor: {r: 1, g: 1, b: 1, a: 1}
+    rgba: 4278190080
+  m_fontColor: {r: 0, g: 0, b: 0, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:

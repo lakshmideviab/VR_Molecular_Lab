@@ -335,6 +335,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   atomType: C
   maxBonds: 4
+  defaultMaterial: {fileID: 2100000, guid: 7193818987f1b4d408e97ef294efcf53, type: 2}
+  grabbedMaterial: {fileID: 2100000, guid: bcf86d719eb3cec43a8cc6fc7cb730c5, type: 2}
+  bondedMaterial: {fileID: 2100000, guid: 14fa7b104eeee1442ae36182b2444440, type: 2}
+  saturatedMaterial: {fileID: 2100000, guid: 7193818987f1b4d408e97ef294efcf53, type: 2}
   grabInteractable: {fileID: 9056399467282799337}
   snapPoints:
   - {fileID: 8801903663205730618}

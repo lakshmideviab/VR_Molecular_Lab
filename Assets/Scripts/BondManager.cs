@@ -1,19 +1,8 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using TMPro;
 using UnityEngine;
 
-/// <summary>
-/// Central bond manager — attach to a single GameObject in your scene.
-///
-/// SNAP RULE (critical):
-///   'a' = the HELD atom  (the one the player is dragging — this one moves)
-///   'b' = the STATIONARY atom (already placed, possibly already bonded — this NEVER moves)
-///
-///   We always move 'a' so that a's free SnapPoint lands on b's free SnapPoint.
-///   This means Carbon (with H already attached) stays perfectly still while the
-///   new H snaps into Carbon's next open slot.
-/// </summary>
+
 public class BondManager : MonoBehaviour
 {
     public static BondManager Instance;
@@ -24,39 +13,105 @@ public class BondManager : MonoBehaviour
     [Header("Molecule Detection")]
     public MoleculeDatabase database;
 
-    public TextMeshProUGUI Description;
-    public TextMeshProUGUI Name;
-    public TextMeshProUGUI Symbol;
-
     [Header("Max bond distance (metres)")]
     public float snapDistance = 0.5f;
 
-    // ─── Internal state ───────────────────────────────────────────────
+    [Header("Multi-Bond Visual Settings")]
+    [Tooltip("Side offset between parallel cylinders for double/triple bonds (metres)")]
+    public float bondOffset = 0.03f;
+
+    [Tooltip("Thickness of each cylinder (local x/z scale)")]
+    public float cylinderThickness = 0.025f;
+
+    private static readonly Dictionary<string, int> BondOrderTable = new Dictionary<string, int>
+    {
+        { "C-N", 3 },
+        { "C-O", 2 },
+        { "O-O", 2 },
+        { "N-N", 3 },
+        { "N-O", 2 },
+    };
+
+    private static int GetBondOrder(string typeA, string typeB)
+    {
+        string key = string.Compare(typeA, typeB) <= 0
+            ? $"{typeA}-{typeB}"
+            : $"{typeB}-{typeA}";
+
+        return BondOrderTable.TryGetValue(key, out int order) ? order : 1;
+    }
 
     private List<AtomController> currentAtoms = new List<AtomController>();
-    private List<BondVisual> currentBonds = new List<BondVisual>();
+    private List<BondVisualGroup> currentBonds = new List<BondVisualGroup>();
+    private List<AtomController> allSpawnedAtoms = new List<AtomController>();
+    private List<GameObject> spawnedMolecules = new List<GameObject>();
 
-    // ─── Live-updating bond cylinder ─────────────────────────────────
-
-    private class BondVisual
+    private class BondVisualGroup
     {
-        public GameObject obj;
+        public List<GameObject> cylinders = new List<GameObject>();
         public Transform a;
         public Transform b;
+        public int order;
+        public float offset;
+        public float thickness;
 
         public void Refresh()
         {
-            if (obj == null || a == null || b == null) return;
+            if (a == null || b == null) return;
+
             Vector3 posA = a.position;
             Vector3 posB = b.position;
-            float length = Vector3.Distance(posA, posB);
-            obj.transform.position = (posA + posB) / 2f;
-            obj.transform.up = (posB - posA).normalized;
-            obj.transform.localScale = new Vector3(0.04f, length / 2f, 0.04f);
+            Vector3 axis = posB - posA;
+            float length = axis.magnitude;
+            if (length < 0.0001f) return;
+
+            Vector3 dir = axis / length;
+            Vector3 mid = (posA + posB) * 0.5f;
+
+            Vector3 perp = Mathf.Abs(Vector3.Dot(dir, Vector3.up)) < 0.9f
+                ? Vector3.Cross(dir, Vector3.up).normalized
+                : Vector3.Cross(dir, Vector3.right).normalized;
+
+            List<Vector3> offsets = GetOffsets(order, perp, offset);
+
+            for (int i = 0; i < cylinders.Count; i++)
+            {
+                if (cylinders[i] == null) continue;
+                cylinders[i].transform.position = mid + offsets[i];
+                cylinders[i].transform.up = dir;
+                cylinders[i].transform.localScale = new Vector3(thickness, length / 2f, thickness);
+            }
+        }
+
+        private static List<Vector3> GetOffsets(int order, Vector3 perp, float gap)
+        {
+            switch (order)
+            {
+                case 2:
+                    return new List<Vector3>
+                    {
+                        perp * -gap,
+                        perp *  gap
+                    };
+                case 3:
+                    return new List<Vector3>
+                    {
+                        Vector3.zero,
+                        perp * -gap,
+                        perp *  gap
+                    };
+                default:
+                    return new List<Vector3> { Vector3.zero };
+            }
+        }
+
+        public void DestroyAll()
+        {
+            foreach (var c in cylinders)
+                if (c != null) Object.Destroy(c);
+            cylinders.Clear();
         }
     }
-
-    // ─────────────────────────────────────────────────────────────────
 
     private void Awake()
     {
@@ -64,62 +119,54 @@ public class BondManager : MonoBehaviour
         Instance = this;
 
         if (bondPrefab == null)
-            Debug.LogWarning("[BondManager] bondPrefab not assigned — bonds will be invisible.");
+            Debug.LogWarning("[BondManager] bondPrefab not assigned — bonds invisible.");
         if (database == null)
             Debug.LogWarning("[BondManager] database not assigned — molecule detection disabled.");
     }
 
     private void Update()
     {
-        foreach (var bv in currentBonds) bv.Refresh();
+        foreach (var bg in currentBonds) bg.Refresh();
     }
 
-    // ─────────────────────────────────────────────────────────────────
-    // Called by AtomController.OnTriggerEnter
-    //   'incoming' = the atom the player is currently holding (it will move)
-    //   'anchor'   = the atom already in the scene (it stays still)
-    // ─────────────────────────────────────────────────────────────────
+    public void RegisterAtom(AtomController atom)
+    {
+        if (atom != null && !allSpawnedAtoms.Contains(atom))
+            allSpawnedAtoms.Add(atom);
+    }
 
     public bool TrySnapBond(AtomController incoming, AtomController anchor)
     {
         if (incoming == null || anchor == null) return false;
         if (incoming.IsBondedWith(anchor)) { Debug.Log("[BondManager] Already bonded"); return false; }
-        if (!incoming.CanBond()) { Debug.Log($"[BondManager] {incoming.name} is full"); AudioManager.Instance?.PlayError(); return false; }
-        if (!anchor.CanBond()) { Debug.Log($"[BondManager] {anchor.name} is full"); AudioManager.Instance?.PlayError(); return false; }
+        if (!incoming.CanBond()) return false;
+        if (!anchor.CanBond()) return false;
 
         float dist = Vector3.Distance(incoming.transform.position, anchor.transform.position);
-        if (dist > snapDistance)
-        {
-            Debug.Log($"[BondManager] Too far: {dist:F2}m > {snapDistance}m");
-            return false;
-        }
+        if (dist > snapDistance) return false;
 
-        // ── Snap the INCOMING (held) atom to the ANCHOR's free slot ──
-        //
-        // We want:   incomingSnapPoint.worldPos  ==  anchorSnapPoint.worldPos
-        //
-        // Since incomingSnapPoint is a child of 'incoming':
-        //   incomingSnap.worldPos = incoming.position + snapOffsetIncoming
-        //   (where snapOffsetIncoming = incomingSnap.worldPos - incoming.worldPos,
-        //    computed BEFORE we move anything)
-        //
-        // Solving for the new incoming.position:
-        //   incoming.position = anchorSnap.worldPos - snapOffsetIncoming
-        //
-        // The anchor atom (and everything already bonded to it) is NEVER touched.
-        //
+        float radiusAnchor = GetAtomRadius(anchor);
+        float radiusIncoming = GetAtomRadius(incoming);
+        float bondLength = radiusAnchor + radiusIncoming;
+
         SnapPoint snapAnchor = anchor.GetFreeSnapPoint();
         SnapPoint snapIncoming = incoming.GetFreeSnapPoint();
 
         if (snapAnchor != null && snapIncoming != null)
         {
-            // Capture offset BEFORE moving (snapIncoming is a child, moves with incoming)
-            Vector3 snapOffsetIncoming = snapIncoming.transform.position - incoming.transform.position;
+            Vector3 bondDir = (snapAnchor.transform.position - anchor.transform.position);
+            if (bondDir == Vector3.zero) bondDir = Vector3.right;
+            bondDir.Normalize();
 
-            // Move only the incoming atom
-            incoming.transform.position = snapAnchor.transform.position - snapOffsetIncoming;
+            incoming.transform.position = anchor.transform.position + bondDir * bondLength;
 
-            // Mark both snap points occupied
+            Vector3 incomingSnapLocal = snapIncoming.transform.position - incoming.transform.position;
+            if (incomingSnapLocal != Vector3.zero)
+            {
+                Quaternion rot = Quaternion.FromToRotation(incomingSnapLocal.normalized, -bondDir);
+                incoming.transform.rotation = rot * incoming.transform.rotation;
+            }
+
             snapAnchor.isOccupied = true;
             snapIncoming.isOccupied = true;
             snapAnchor.pairedPoint = snapIncoming;
@@ -127,50 +174,84 @@ public class BondManager : MonoBehaviour
         }
         else
         {
-            // No SnapPoints on prefab — place incoming atom directly at anchor's position.
-            // This is a fallback; set up SnapPoints on your prefabs for correct placement.
-            incoming.transform.position = anchor.transform.position;
-            Debug.LogWarning("[BondManager] No SnapPoints found — using centre fallback. Add SnapPoint children to your atom prefabs.");
+            Vector3 dir = incoming.transform.position - anchor.transform.position;
+            if (dir == Vector3.zero) dir = Vector3.right;
+            incoming.transform.position = anchor.transform.position + dir.normalized * bondLength;
         }
 
-        // ── Register bond ─────────────────────────────────────────────
+        SeparateOverlap(incoming, anchor);
+
         incoming.AddBond(anchor);
         anchor.AddBond(incoming);
 
         if (!currentAtoms.Contains(incoming)) currentAtoms.Add(incoming);
         if (!currentAtoms.Contains(anchor)) currentAtoms.Add(anchor);
 
-        // ── Lock only when valency is fully used ──────────────────────
-        //   H  (maxBonds=1) bonds once  → locked immediately
-        //   O  (maxBonds=2) bonds once  → still unlocked, still grabbable
-        //   C  (maxBonds=4) bonds 1–3×  → still unlocked
-        //   C  (maxBonds=4) bonds 4×    → locked
         incoming.CheckAndLockIfSaturated();
         anchor.CheckAndLockIfSaturated();
 
-        // ── Bond visual ───────────────────────────────────────────────
-        var bv = CreateBondVisual(incoming.transform, anchor.transform);
-        if (bv != null) currentBonds.Add(bv);
+        if (!incoming.isLocked) incoming.RefreshMaterial();
+        if (!anchor.isLocked) anchor.RefreshMaterial();
 
-        Debug.Log($"[BondManager] Bonded: {incoming.atomType}({incoming.BondCount}/{incoming.maxBonds}) → {anchor.atomType}({anchor.BondCount}/{anchor.maxBonds})");
+        if (incoming.grabInteractable != null) incoming.grabInteractable.enabled = false;
+        if (anchor.grabInteractable != null) anchor.grabInteractable.enabled = false;
+
+        int bondOrder = GetBondOrder(incoming.atomType, anchor.atomType);
+        var group = CreateBondVisualGroup(incoming.transform, anchor.transform, bondOrder);
+        if (group != null) currentBonds.Add(group);
+
+        Debug.Log($"[BondManager] Bond order {bondOrder}: {incoming.atomType}({incoming.BondCount}/{incoming.maxBonds}) -> {anchor.atomType}({anchor.BondCount}/{anchor.maxBonds})");
         AudioManager.Instance?.PlayBond();
         CheckMolecule();
         return true;
     }
 
-    // ─────────────────────────────────────────────────────────────────
-
-    private BondVisual CreateBondVisual(Transform tA, Transform tB)
+    private BondVisualGroup CreateBondVisualGroup(Transform tA, Transform tB, int order)
     {
         if (bondPrefab == null) return null;
-        var bv = new BondVisual { obj = Instantiate(bondPrefab), a = tA, b = tB };
-        bv.Refresh();
-        return bv;
+
+        var group = new BondVisualGroup
+        {
+            a = tA,
+            b = tB,
+            order = order,
+            offset = bondOffset,
+            thickness = cylinderThickness
+        };
+
+        for (int i = 0; i < order; i++)
+            group.cylinders.Add(Instantiate(bondPrefab));
+
+        group.Refresh();
+        return group;
     }
 
-    // ─────────────────────────────────────────────────────────────────
-    // Molecule detection
-    // ─────────────────────────────────────────────────────────────────
+    private void SeparateOverlap(AtomController incoming, AtomController anchor)
+    {
+        float minDist = GetAtomRadius(incoming) + GetAtomRadius(anchor);
+        Vector3 delta = incoming.transform.position - anchor.transform.position;
+        float dist = delta.magnitude;
+
+        if (dist < minDist)
+        {
+            Vector3 dir = dist > 0.0001f ? delta / dist : Vector3.right;
+            incoming.transform.position = anchor.transform.position + dir * minDist;
+        }
+    }
+
+    private float GetAtomRadius(AtomController atom)
+    {
+        var sc = atom.GetComponent<SphereCollider>();
+        if (sc != null)
+            return sc.radius * Mathf.Max(
+                atom.transform.lossyScale.x,
+                atom.transform.lossyScale.y,
+                atom.transform.lossyScale.z);
+        return Mathf.Max(
+            atom.transform.lossyScale.x,
+            atom.transform.lossyScale.y,
+            atom.transform.lossyScale.z) * 0.5f;
+    }
 
     private void CheckMolecule()
     {
@@ -193,34 +274,46 @@ public class BondManager : MonoBehaviour
             Vector3 center = currentAtoms
                 .Aggregate(Vector3.zero, (s, a) => s + a.transform.position)
                 / currentAtoms.Count;
-
-            Instantiate(mol.moleculePrefab, center, Quaternion.identity);
-            Description.text = mol.Description;
-            Name.text = mol.moleculeName;
-            Symbol.text = mol.symbolName;
-            AudioManager.Instance?.PlayMoleculeComplete();
+            spawnedMolecules.Add(Instantiate(mol.moleculePrefab, center, Quaternion.identity));
         }
 
-        foreach (var atom in currentAtoms) if (atom != null) Destroy(atom.gameObject);
-        foreach (var bv in currentBonds) if (bv.obj != null) Destroy(bv.obj);
+        MoleculeUIManager.Instance?.ShowPopup(mol.moleculeName, mol.symbolName, mol.Description);
+        AudioManager.Instance?.PlayMoleculeComplete();
+
+        foreach (var atom in currentAtoms)
+        {
+            allSpawnedAtoms.Remove(atom);
+            if (atom != null) Destroy(atom.gameObject);
+        }
+
+        foreach (var bg in currentBonds) bg.DestroyAll();
 
         currentAtoms.Clear();
         currentBonds.Clear();
     }
 
-    // ─────────────────────────────────────────────────────────────────
+    public void ClearMolecules()
+    {
+        foreach (var mol in spawnedMolecules)
+            if (mol != null) Destroy(mol);
+        spawnedMolecules.Clear();
+        MoleculeUIManager.Instance?.HidePopup();
+    }
 
     public void ClearAll()
     {
-        foreach (var bv in currentBonds) if (bv.obj != null) Destroy(bv.obj);
+        foreach (var bg in currentBonds) bg.DestroyAll();
+        foreach (var atom in allSpawnedAtoms) if (atom != null) Destroy(atom.gameObject);
+        foreach (var mol in spawnedMolecules) if (mol != null) Destroy(mol);
+
         currentAtoms.Clear();
         currentBonds.Clear();
+        allSpawnedAtoms.Clear();
+        spawnedMolecules.Clear();
+
+        MoleculeUIManager.Instance?.HidePopup();
+        Debug.Log("[BondManager] Full scene cleared.");
     }
 
-    public void AddBlank()
-    {
-        Description.text = "";
-        Name.text = "";
-        Symbol.text = "";
-    }
+    public void AddBlank() => MoleculeUIManager.Instance?.HidePopup();
 }

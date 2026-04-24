@@ -1,17 +1,13 @@
 using UnityEngine;
 using UnityEngine.UI;
 
-/// <summary>
-/// Attach to a UI Button. Set atomType in Inspector.
-/// Calls AtomSpawner.Instance.SpawnAtom() when clicked.
-/// Make sure you have an AtomSpawner in the scene!
-/// </summary>
+
 [RequireComponent(typeof(Button))]
 public class AtomSpawnButton : MonoBehaviour
 {
-    [Tooltip("Must match the atomType string on your atom prefab (e.g. H, O, C)")]
-    public string atomType = "H";
     
+    public string atomType = "H";
+
     private void Awake()
     {
         GetComponent<Button>().onClick.AddListener(OnClick);
@@ -26,10 +22,18 @@ public class AtomSpawnButton : MonoBehaviour
     {
         if (AtomSpawner.Instance == null)
         {
-            Debug.LogError("[AtomSpawnButton] No AtomSpawner in scene! Add one.");
+            Debug.LogError("[AtomSpawnButton] No AtomSpawner in scene!");
             return;
         }
-        AtomSpawner.Instance.SpawnAtom(atomType);
+
+        GameObject spawnedAtom = AtomSpawner.Instance.SpawnAtom(atomType);
+
+        if (spawnedAtom != null)
+        {
+            AtomController ac = spawnedAtom.GetComponent<AtomController>();
+            BondManager.Instance?.RegisterAtom(ac);
+        }
+
         AudioManager.Instance?.PlayUIClick();
     }
 }

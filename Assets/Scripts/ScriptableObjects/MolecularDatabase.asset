@@ -13,15 +13,6 @@ MonoBehaviour:
   m_Name: MolecularDatabase
   m_EditorClassIdentifier: 
   molecules:
-  - moleculeName: 'Water '
-    Description: Water is a molecule where one oxygen atom connects with two hydrogen
-      atoms through covalent bonds.
-    symbolName: H20
-    atoms:
-    - H
-    - H
-    - O
-    moleculePrefab: {fileID: 7100058949376332415, guid: cf630d567bad8d64c88e1734a9959ce3, type: 3}
   - moleculeName: Hydrogen
     Description: The simplest molecule, made of two hydrogen atoms sharing a single
       covalent bond; highly flammable and commonly used as a fuel.
@@ -43,9 +34,27 @@ MonoBehaviour:
       up about 78% of Earth\u2019s atmosphere."
     symbolName: N2
     atoms:
+    - N
+    - N
+    moleculePrefab: {fileID: 2091477736493020085, guid: b40646c58c16d3f4eb8a185c011eff31, type: 3}
+  - moleculeName: 'Water '
+    Description: Water is a molecule where one oxygen atom connects with two hydrogen
+      atoms through covalent bonds.
+    symbolName: H20
+    atoms:
+    - H
+    - H
+    - O
+    moleculePrefab: {fileID: 7100058949376332415, guid: cf630d567bad8d64c88e1734a9959ce3, type: 3}
+  - moleculeName: Carbondioxide
+    Description: "A very stable molecule with a strong triple covalent bond; makes
+      up about 78% of Earth\u2019s atmosphere."
+    symbolName: CO2
+    atoms:
+    - C
     - O
     - O
-    moleculePrefab: {fileID: 7226204758602305626, guid: 7bf900bf48a78394a85c661452618401, type: 3}
+    moleculePrefab: {fileID: 4334333822069946268, guid: da95bb9982a69874b9f3d6713c61c402, type: 3}
   - moleculeName: Methane
     Description: "A very stable molecule with a strong triple covalent bond; makes
       up about 78% of Earth\u2019s atmosphere."
@@ -57,3 +66,22 @@ MonoBehaviour:
     - H
     - H
     moleculePrefab: {fileID: 1982171596914730589, guid: 05c92718a597ce04a9a9bfdd900ecd47, type: 3}
+  - moleculeName: Ammonium
+    Description: A compound where nitrogen bonds with three hydrogens; commonly used
+      in fertilizers and has a pungent smell.
+    symbolName: NH3
+    atoms:
+    - N
+    - H
+    - H
+    - H
+    moleculePrefab: {fileID: 324431198997624906, guid: fda65472e800aeb49934deafdfd31981, type: 3}
+  - moleculeName: Hydrongen Cynade
+    Description: A compound where nitrogen bonds with three hydrogens; commonly used
+      in fertilizers and has a pungent smell.
+    symbolName: HCN
+    atoms:
+    - H
+    - C
+    - N
+    moleculePrefab: {fileID: 4222937344479764317, guid: 4e7a9ef0e76eafa44bc4f3b4837a2d46, type: 3}

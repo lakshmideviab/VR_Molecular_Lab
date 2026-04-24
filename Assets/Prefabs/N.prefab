@@ -287,6 +287,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   atomType: N
   maxBonds: 3
+  defaultMaterial: {fileID: 2100000, guid: aa11fe4fd56ecd449b97d50bb824bebd, type: 2}
+  grabbedMaterial: {fileID: 2100000, guid: 5864027bd8039df4a94fc243e92e0e46, type: 2}
+  bondedMaterial: {fileID: 2100000, guid: f0773cf4fb43bce4a95b793eb65370c5, type: 2}
+  saturatedMaterial: {fileID: 2100000, guid: aa11fe4fd56ecd449b97d50bb824bebd, type: 2}
   grabInteractable: {fileID: 4546085758844435935}
   snapPoints:
   - {fileID: 2914420773858141716}
@@ -294,7 +298,6 @@ MonoBehaviour:
   - {fileID: 4074068851247374194}
   isBeingHeld: 0
   isLocked: 0
-  bondedAtoms: []
 --- !u!65 &7712817348700306104
 BoxCollider:
   m_ObjectHideFlags: 0
