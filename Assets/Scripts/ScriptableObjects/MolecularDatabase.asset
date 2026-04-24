@@ -1,0 +1,59 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5c63de1e90592c1448e227f7eeab3c8f, type: 3}
+  m_Name: MolecularDatabase
+  m_EditorClassIdentifier: 
+  molecules:
+  - moleculeName: 'Water '
+    Description: Water is a molecule where one oxygen atom connects with two hydrogen
+      atoms through covalent bonds.
+    symbolName: H20
+    atoms:
+    - H
+    - H
+    - O
+    moleculePrefab: {fileID: 7100058949376332415, guid: cf630d567bad8d64c88e1734a9959ce3, type: 3}
+  - moleculeName: Hydrogen
+    Description: The simplest molecule, made of two hydrogen atoms sharing a single
+      covalent bond; highly flammable and commonly used as a fuel.
+    symbolName: H2
+    atoms:
+    - H
+    - H
+    moleculePrefab: {fileID: 3901882892528668836, guid: 1f7c7879c348c74458dfd08fa314b35f, type: 3}
+  - moleculeName: Oxygen
+    Description: A diatomic molecule with a double covalent bond; essential for respiration
+      and supports combustion.
+    symbolName: O2
+    atoms:
+    - O
+    - O
+    moleculePrefab: {fileID: 7226204758602305626, guid: 7bf900bf48a78394a85c661452618401, type: 3}
+  - moleculeName: Nitrogen
+    Description: "A very stable molecule with a strong triple covalent bond; makes
+      up about 78% of Earth\u2019s atmosphere."
+    symbolName: N2
+    atoms:
+    - O
+    - O
+    moleculePrefab: {fileID: 7226204758602305626, guid: 7bf900bf48a78394a85c661452618401, type: 3}
+  - moleculeName: Methane
+    Description: "A very stable molecule with a strong triple covalent bond; makes
+      up about 78% of Earth\u2019s atmosphere."
+    symbolName: CH4
+    atoms:
+    - C
+    - H
+    - H
+    - H
+    - H
+    moleculePrefab: {fileID: 1982171596914730589, guid: 05c92718a597ce04a9a9bfdd900ecd47, type: 3}
