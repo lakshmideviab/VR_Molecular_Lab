@@ -76,7 +76,7 @@ MonoBehaviour:
     - H
     - H
     moleculePrefab: {fileID: 324431198997624906, guid: fda65472e800aeb49934deafdfd31981, type: 3}
-  - moleculeName: Hydrongen Cynade
+  - moleculeName: Hydrogen Cyanide
     Description: A compound where nitrogen bonds with three hydrogens; commonly used
       in fertilizers and has a pungent smell.
     symbolName: HCN
